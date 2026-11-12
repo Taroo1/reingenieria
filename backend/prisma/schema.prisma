@@ -1,0 +1,984 @@
+// GENERADO desde database/tools/spec.py. No editar a mano: cambie la especificacion y regenere.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ProviderType {
+  GDS
+  AIRLINE
+  CONSOLIDATOR
+  HOTEL
+  BEDBANK
+  TRAVEL_ASSISTANCE
+  @@map("provider_type")
+}
+
+enum AdapterKind {
+  SIMULATED
+  HTTP
+  BOOMI
+  @@map("adapter_kind")
+}
+
+enum AuthType {
+  NONE
+  API_KEY
+  BEARER
+  BASIC
+  OAUTH2_CLIENT
+  @@map("auth_type")
+}
+
+enum IntegrationStatus {
+  UNKNOWN
+  HEALTHY
+  DEGRADED
+  DOWN
+  @@map("integration_status")
+}
+
+enum CircuitState {
+  CLOSED
+  OPEN
+  HALF_OPEN
+  @@map("circuit_state")
+}
+
+enum ProductType {
+  FLIGHT
+  ROOM
+  ASSISTANCE_PLAN
+  @@map("product_type")
+}
+
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+  @@map("product_status")
+}
+
+enum HoldStatus {
+  ACTIVE
+  CONSUMED
+  RELEASED
+  EXPIRED
+  @@map("hold_status")
+}
+
+enum MovementKind {
+  LOAD
+  HOLD
+  RELEASE
+  CONFIRM
+  CANCEL
+  ADJUST
+  EXPIRE
+  @@map("movement_kind")
+}
+
+enum QuoteStatus {
+  OPEN
+  EXPIRED
+  CONVERTED
+  @@map("quote_status")
+}
+
+enum BookingStatus {
+  DRAFT
+  QUOTED
+  HELD
+  PENDING_CONFIRMATION
+  CONFIRMED
+  REQUIRES_REVIEW
+  COMPENSATING
+  CANCEL_REQUESTED
+  CANCELLED
+  FAILED
+  EXPIRED
+  @@map("booking_status")
+}
+
+enum BookingItemStatus {
+  PENDING
+  HELD
+  PENDING_CONFIRMATION
+  CONFIRMED
+  FAILED
+  CANCEL_REQUESTED
+  CANCELLED
+  REQUIRES_REVIEW
+  @@map("booking_item_status")
+}
+
+enum IntegrationOperation {
+  HEALTH_CHECK
+  SEARCH
+  GET_RATES
+  HOLD
+  CONFIRM
+  CANCEL
+  QUERY_BOOKING
+  SYNC
+  @@map("integration_operation")
+}
+
+enum TransactionStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  TIMEOUT
+  REJECTED
+  SHORT_CIRCUITED
+  @@map("transaction_status")
+}
+
+enum IdempotencyStatus {
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  @@map("idempotency_status")
+}
+
+enum LogLevel {
+  DEBUG
+  INFO
+  WARN
+  ERROR
+  @@map("log_level")
+}
+
+enum ExceptionType {
+  PROVIDER_ERROR
+  PROVIDER_TIMEOUT
+  PROVIDER_UNAVAILABLE
+  NO_AVAILABILITY
+  PRICE_CHANGED
+  PARTIAL_CONFIRMATION
+  CANCELLATION_FAILED
+  RECONCILIATION_MISMATCH
+  MANUAL_PROVIDER
+  OTHER
+  @@map("exception_type")
+}
+
+enum ExceptionStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  DISMISSED
+  @@map("exception_status")
+}
+
+enum Severity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+  @@map("severity")
+}
+
+enum AlertKind {
+  PROVIDER_DOWN
+  CIRCUIT_OPEN
+  HIGH_ERROR_RATE
+  HIGH_LATENCY
+  SYNC_FAILED
+  INCONSISTENCY
+  EXCEPTION_OPENED
+  @@map("alert_kind")
+}
+
+enum AlertStatus {
+  OPEN
+  ACKNOWLEDGED
+  RESOLVED
+  @@map("alert_status")
+}
+
+enum SyncKind {
+  AVAILABILITY
+  RATES
+  BOOKINGS
+  CATALOG
+  @@map("sync_kind")
+}
+
+enum SyncStatus {
+  RUNNING
+  SUCCESS
+  PARTIAL
+  FAILED
+  @@map("sync_status")
+}
+
+enum InconsistencyKind {
+  AVAILABILITY_MISMATCH
+  RATE_MISMATCH
+  BOOKING_STATUS_MISMATCH
+  MISSING_AT_PROVIDER
+  MISSING_LOCAL
+  @@map("inconsistency_kind")
+}
+
+enum InconsistencyStatus {
+  OPEN
+  RESOLVED
+  IGNORED
+  @@map("inconsistency_status")
+}
+
+model Role {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name String @unique
+  description String?
+  createdAt DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+  usersByRoleId User[] @relation("users_role_id")
+  @@map("roles")
+}
+
+model User {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email String @unique
+  passwordHash String @map("password_hash")
+  fullName String @map("full_name")
+  roleId String @db.Uuid @map("role_id")
+  active Boolean @default(true)
+  lastLoginAt DateTime? @db.Timestamptz(6) @map("last_login_at")
+  createdAt DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt DateTime @updatedAt @db.Timestamptz(6) @map("updated_at")
+  role Role @relation("users_role_id", fields: [roleId], references: [id], onDelete: Restrict)
+  refreshTokensByUserId RefreshToken[] @relation("refresh_tokens_user_id")
+  integrationHealthChecksByCheckedById IntegrationHealthCheck[] @relation("integration_health_checks_checked_by_id")
+  allotmentsByCreatedById Allotment[] @relation("allotments_created_by_id")
+  inventoryMovementsByUserId InventoryMovement[] @relation("inventory_movements_user_id")
+  rateHistoryByChangedById RateHistory[] @relation("rate_history_changed_by_id")
+  quotesByCreatedById Quote[] @relation("quotes_created_by_id")
+  bookingsByCreatedById Booking[] @relation("bookings_created_by_id")
+  bookingStatusHistoryByUserId BookingStatusHistory[] @relation("booking_status_history_user_id")
+  integrationTransactionsByUserId IntegrationTransaction[] @relation("integration_transactions_user_id")
+  idempotencyKeysByUserId IdempotencyKey[] @relation("idempotency_keys_user_id")
+  auditLogsByUserId AuditLog[] @relation("audit_logs_user_id")
+  exceptionCasesByAssignedToId ExceptionCase[] @relation("exception_cases_assigned_to_id")
+  exceptionCasesByResolvedById ExceptionCase[] @relation("exception_cases_resolved_by_id")
+  exceptionEventsByUserId ExceptionEvent[] @relation("exception_events_user_id")
+  alertsByAcknowledgedById Alert[] @relation("alerts_acknowledged_by_id")
+  syncRunsByTriggeredById SyncRun[] @relation("sync_runs_triggered_by_id")
+  inconsistenciesByResolvedById Inconsistency[] @relation("inconsistencies_resolved_by_id")
+  @@index([roleId])
+  @@index([active])
+  @@map("users")
+}
+
+model RefreshToken {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId String @db.Uuid @map("user_id")
+  tokenHash String @unique @map("token_hash")
+  expiresAt DateTime @db.Timestamptz(6) @map("expires_at")
+  revokedAt DateTime? @db.Timestamptz(6) @map("revoked_at")
+  userAgent String? @map("user_agent")
+  ip String?
+  createdAt DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+  user User @relation("refresh_tokens_user_id", fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+model Provider {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code String @unique
+  name String
+  type ProviderType
+  active Boolean @default(true)
+  description String?
+  createdAt DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt DateTime @updatedAt @db.Timestamptz(6) @map("updated_at")
+  ProviderConfigByProviderId ProviderConfig? @relation("provider_configs_provider_id")
+  providerServicesByProviderId ProviderService[] @relation("provider_services_provider_id")
+  integrationsByProviderId Integration[] @relation("integrations_provider_id")
+  productsByProviderId Product[] @relation("products_provider_id")
+  externalReferencesByProviderId ExternalReference[] @relation("external_references_provider_id")
+  availabilitySnapshotsByProviderId AvailabilitySnapshot[] @relation("availability_snapshots_provider_id")
+  integrationTransactionsByProviderId IntegrationTransaction[] @relation("integration_transactions_provider_id")
+  exceptionCasesByProviderId ExceptionCase[] @relation("exception_cases_provider_id")
+  alertsByProviderId Alert[] @relation("alerts_provider_id")
+  syncRunsByProviderId SyncRun[] @relation("sync_runs_provider_id")
+  inconsistenciesByProviderId Inconsistency[] @relation("inconsistencies_provider_id")
+  @@index([type])
+  @@index([active])
+  @@map("providers")
+}
+
+model ProviderConfig {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  providerId String @unique @db.Uuid @map("provider_id")
+  baseUrl String @map("base_url")
+  authType AuthType @default(NONE) @map("auth_type")
+  authHeaderName String? @map("auth_header_name")
+  credentialsEnc String? @map("credentials_enc")
+  timeoutMs Int @default(8000) @map("timeout_ms")
+  maxRetries Int @default(3) @map("max_retries")
+  retryBaseMs Int @default(200) @map("retry_base_ms")
+  retryMaxMs Int @default(5000) @map("retry_max_ms")
+  cbFailureThreshold Int @default(5) @map("cb_failure_threshold")
+  cbResetTimeoutMs Int @default(30000) @map("cb_reset_timeout_ms")
+  cbHalfOpenMaxCalls Int @default(1) @map("cb_half_open_max_calls")
+  supportsIdempotency Boolean @default(false) @map("supports_idempotency")
+  params Json @default("{}")
+  createdAt DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt DateTime @updatedAt @db.Timestamptz(6) @map("updated_at")
+  provider Provider @relation("provider_configs_provider_id", fields: [providerId], references: [id], onDelete: Cascade)
+  @@map("provider_configs")
+}
+
+model ProviderService {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  providerId String @db.Uuid @map("provider_id")
+  serviceType ProductType @map("service_type")
+  canSearch Boolean @default(true) @map("can_search")
+  canHold Boolean @default(false) @map("can_hold")
+  canConfirm Boolean @default(true) @map("can_confirm")
+  canCancel Boolean @default(true) @map("can_cancel")
+  canQueryStatus Boolean @default(true) @map("can_query_status")
+  createdAt DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+  provider Provider @relation("provider_services_provider_id", fields: [providerId], references: [id], onDelete: Cascade)
+  @@unique([providerId, serviceType])
+  @@map("provider_services")
+}
+
+model Integration {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  providerId String @db.Uuid @map("provider_id")
+  name String
+  adapterKind AdapterKind @map("adapter_kind")
+  enabled Boolean @default(false)
+  status IntegrationStatus @default(UNKNOWN)
+  lastHealthAt DateTime? @db.Timestamptz(6) @map("last_health_at")
+  lastError String? @map("last_error")
+  createdAt DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt DateTime @updatedAt @db.Timestamptz(6) @map("updated_at")
+  provider Provider @relation("integrations_provider_id", fields: [providerId], references: [id], onDelete: Cascade)
+  integrationHealthChecksByIntegrationId IntegrationHealthCheck[] @relation("integration_health_checks_integration_id")
+  CircuitBreakerStateByIntegrationId CircuitBreakerState? @relation("circuit_breaker_states_integration_id")
+  integrationTransactionsByIntegrationId IntegrationTransaction[] @relation("integration_transactions_integration_id")
+  alertsByIntegrationId Alert[] @relation("alerts_integration_id")
+  syncRunsByIntegrationId SyncRun[] @relation("sync_runs_integration_id")
+  @@unique([providerId, name])
+  @@index([enabled])
+  @@index([status])
+  @@map("integrations")
+}
+
+model IntegrationHealthCheck {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  integrationId String @db.Uuid @map("integration_id")
+  success Boolean
+  latencyMs Int? @map("latency_ms")
+  statusCode Int? @map("status_code")
+  message String?
+  checkedAt DateTime @default(now()) @db.Timestamptz(6) @map("checked_at")
+  checkedById String? @db.Uuid @map("checked_by_id")
+  integration Integration @relation("integration_health_checks_integration_id", fields: [integrationId], references: [id], onDelete: Cascade)
+  checkedBy User? @relation("integration_health_checks_checked_by_id", fields: [checkedById], references: [id], onDelete: SetNull)
+  @@index([integrationId, checkedAt])
+  @@map("integration_health_checks")
+}
+
+model CircuitBreakerState {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  integrationId String @unique @db.Uuid @map("integration_id")
+  state CircuitState @default(CLOSED)
+  failureCount Int @default(0) @map("failure_count")
+  successCount Int @default(0) @map("success_count")
+  openedAt DateTime? @db.Timestamptz(6) @map("opened_at")
+  nextAttemptAt DateTime? @db.Timestamptz(6) @map("next_attempt_at")
+  updatedAt DateTime @updatedAt @db.Timestamptz(6) @map("updated_at")
+  integration Integration @relation("circuit_breaker_states_integration_id", fields: [integrationId], references: [id], onDelete: Cascade)
+  @@map("circuit_breaker_states")
+}
+
+model Product {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  providerId String @db.Uuid @map("provider_id")
+  type ProductType
+  code String
+  name String
+  status ProductStatus @default(ACTIVE)
+  createdAt DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt DateTime @updatedAt @db.Timestamptz(6) @map("updated_at")
+  provider Provider @relation("products_provider_id", fields: [providerId], references: [id], onDelete: Restrict)
+  ProductFlightByProductId ProductFlight? @relation("product_flight_product_id")
+  ProductRoomByProductId ProductRoom? @relation("product_room_product_id")
+  ProductAssistanceByProductId ProductAssistance? @relation("product_assistance_product_id")
+  availabilitySnapshotsByProductId AvailabilitySnapshot[] @relation("availability_snapshots_product_id")
+  allotmentsByProductId Allotment[] @relation("allotments_product_id")
+  inventoryLevelsByProductId InventoryLevel[] @relation("inventory_levels_product_id")
+  ratesByProductId Rate[] @relation("rates_product_id")
+  quoteItemsByProductId QuoteItem[] @relation("quote_items_product_id")
+  bookingItemsByProductId BookingItem[] @relation("booking_items_product_id")
+  inconsistenciesByProductId Inconsistency[] @relation("inconsistencies_product_id")
+  @@unique([providerId, code])
+  @@index([type, status])
+  @@map("products")
+}
+
+model Hotel {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name String
+  city String
+  country String
+  stars Int? @db.SmallInt
+  allInclusive Boolean @default(false) @map("all_inclusive")
+  createdAt DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt DateTime @updatedAt @db.Timestamptz(6) @map("updated_at")
+  productRoomByHotelId ProductRoom[] @relation("product_room_hotel_id")
+  @@index([city])
+  @@map("hotels")
+}
+
+model ProductFlight {
+  productId String @id @db.Uuid @map("product_id")
+  carrier String
+  flightNumber String @map("flight_number")
+  origin String @db.Char(3)
+  destination String @db.Char(3)
+  departureAt DateTime @db.Timestamptz(6) @map("departure_at")
+  arrivalAt DateTime @db.Timestamptz(6) @map("arrival_at")
+  cabin String @default("ECONOMY")
+  product Product @relation("product_flight_product_id", fields: [productId], references: [id], onDelete: Cascade)
+  @@index([origin, destination, departureAt])
+  @@map("product_flight")
+}
+
+model ProductRoom {
+  productId String @id @db.Uuid @map("product_id")
+  hotelId String @db.Uuid @map("hotel_id")
+  roomType String @map("room_type")
+  boardBasis String @default("ALL_INCLUSIVE") @map("board_basis")
+  maxOccupancy Int @map("max_occupancy")
+  product Product @relation("product_room_product_id", fields: [productId], references: [id], onDelete: Cascade)
+  hotel Hotel @relation("product_room_hotel_id", fields: [hotelId], references: [id], onDelete: Restrict)
+  @@index([hotelId])
+  @@map("product_room")
+}
+
+model ProductAssistance {
+  productId String @id @db.Uuid @map("product_id")
+  planName String @map("plan_name")
+  coverageSummary String? @map("coverage_summary")
+  maxDays Int? @map("max_days")
+  medicalCoverageUsd Decimal? @db.Decimal(12, 2) @map("medical_coverage_usd")
+  product Product @relation("product_assistance_product_id", fields: [productId], references: [id], onDelete: Cascade)
+  @@map("product_assistance")
+}
+
+model ExternalReference {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  providerId String @db.Uuid @map("provider_id")
+  entityType String @map("entity_type")
+  entityId String @db.Uuid @map("entity_id")
+  externalId String @map("external_id")
+  rawHash String? @map("raw_hash")
+  firstSeenAt DateTime @default(now()) @db.Timestamptz(6) @map("first_seen_at")
+  lastSeenAt DateTime @default(now()) @db.Timestamptz(6) @map("last_seen_at")
+  provider Provider @relation("external_references_provider_id", fields: [providerId], references: [id], onDelete: Restrict)
+  @@unique([providerId, entityType, externalId])
+  @@index([entityType, entityId])
+  @@map("external_references")
+}
+
+model Currency {
+  code String @id @db.Char(3)
+  name String
+  decimals Int @default(2) @db.SmallInt
+  active Boolean @default(true)
+  exchangeRatesByBaseCurrency ExchangeRate[] @relation("exchange_rates_base_currency")
+  exchangeRatesByQuoteCurrency ExchangeRate[] @relation("exchange_rates_quote_currency")
+  ratesByCurrency Rate[] @relation("rates_currency")
+  rateHistoryByCurrency RateHistory[] @relation("rate_history_currency")
+  quotesByCurrency Quote[] @relation("quotes_currency")
+  quoteItemsBySourceCurrency QuoteItem[] @relation("quote_items_source_currency")
+  bookingsByCurrency Booking[] @relation("bookings_currency")
+  bookingItemsBySourceCurrency BookingItem[] @relation("booking_items_source_currency")
+  @@map("currencies")
+}
+
+model ExchangeRate {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  baseCurrency String @db.Char(3) @map("base_currency")
+  quoteCurrency String @db.Char(3) @map("quote_currency")
+  rate Decimal @db.Decimal(18, 8)
+  asOf DateTime @db.Timestamptz(6) @map("as_of")
+  source String
+  baseCurrencyRef Currency @relation("exchange_rates_base_currency", fields: [baseCurrency], references: [code], onDelete: Restrict)
+  quoteCurrencyRef Currency @relation("exchange_rates_quote_currency", fields: [quoteCurrency], references: [code], onDelete: Restrict)
+  @@unique([baseCurrency, quoteCurrency, asOf])
+  @@map("exchange_rates")
+}
+
+model AvailabilitySnapshot {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId String @db.Uuid @map("product_id")
+  providerId String @db.Uuid @map("provider_id")
+  stayDate DateTime @db.Date @map("stay_date")
+  availableQuantity Int @map("available_quantity")
+  syncedAt DateTime @default(now()) @db.Timestamptz(6) @map("synced_at")
+  sourceHash String? @map("source_hash")
+  product Product @relation("availability_snapshots_product_id", fields: [productId], references: [id], onDelete: Cascade)
+  provider Provider @relation("availability_snapshots_provider_id", fields: [providerId], references: [id], onDelete: Restrict)
+  @@unique([productId, stayDate])
+  @@index([providerId, syncedAt])
+  @@map("availability_snapshots")
+}
+
+model Allotment {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId String @db.Uuid @map("product_id")
+  validFrom DateTime @db.Date @map("valid_from")
+  validTo DateTime @db.Date @map("valid_to")
+  quantity Int
+  releaseDays Int @default(0) @map("release_days")
+  active Boolean @default(true)
+  notes String?
+  createdById String? @db.Uuid @map("created_by_id")
+  createdAt DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt DateTime @updatedAt @db.Timestamptz(6) @map("updated_at")
+  product Product @relation("allotments_product_id", fields: [productId], references: [id], onDelete: Restrict)
+  createdBy User? @relation("allotments_created_by_id", fields: [createdById], references: [id], onDelete: SetNull)
+  @@index([productId, validFrom, validTo])
+  @@map("allotments")
+}
+
+model InventoryLevel {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId String @db.Uuid @map("product_id")
+  stayDate DateTime @db.Date @map("stay_date")
+  totalQuantity Int @map("total_quantity")
+  heldQuantity Int @default(0) @map("held_quantity")
+  soldQuantity Int @default(0) @map("sold_quantity")
+  version Int @default(0)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6) @map("updated_at")
+  product Product @relation("inventory_levels_product_id", fields: [productId], references: [id], onDelete: Restrict)
+  inventoryHoldsByLevelId InventoryHold[] @relation("inventory_holds_level_id")
+  inventoryMovementsByLevelId InventoryMovement[] @relation("inventory_movements_level_id")
+  @@unique([productId, stayDate])
+  @@index([stayDate])
+  @@map("inventory_levels")
+}
+
+model InventoryHold {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  levelId String @db.Uuid @map("level_id")
+  bookingItemId String? @db.Uuid @map("booking_item_id")
+  quantity Int
+  status HoldStatus @default(ACTIVE)
+  expiresAt DateTime @db.Timestamptz(6) @map("expires_at")
+  createdAt DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+  releasedAt DateTime? @db.Timestamptz(6) @map("released_at")
+  level InventoryLevel @relation("inventory_holds_level_id", fields: [levelId], references: [id], onDelete: Restrict)
+  bookingItem BookingItem? @relation("inventory_holds_booking_item_id", fields: [bookingItemId], references: [id], onDelete: SetNull)
+  @@index([status, expiresAt])
+  @@index([bookingItemId])
+  @@index([levelId])
+  @@map("inventory_holds")
+}
+
+model InventoryMovement {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  levelId String @db.Uuid @map("level_id")
+  kind MovementKind
+  deltaTotal Int @default(0) @map("delta_total")
+  deltaHeld Int @default(0) @map("delta_held")
+  deltaSold Int @default(0) @map("delta_sold")
+  referenceType String? @map("reference_type")
+  referenceId String? @db.Uuid @map("reference_id")
+  userId String? @db.Uuid @map("user_id")
+  at DateTime @default(now()) @db.Timestamptz(6)
+  level InventoryLevel @relation("inventory_movements_level_id", fields: [levelId], references: [id], onDelete: Restrict)
+  user User? @relation("inventory_movements_user_id", fields: [userId], references: [id], onDelete: SetNull)
+  @@index([levelId, at])
+  @@index([referenceType, referenceId])
+  @@map("inventory_movements")
+}
+
+model Rate {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId String @db.Uuid @map("product_id")
+  rateCode String @default("BAR") @map("rate_code")
+  currency String @db.Char(3)
+  amount Decimal @db.Decimal(14, 2)
+  taxesAmount Decimal @default(0) @db.Decimal(14, 2) @map("taxes_amount")
+  validFrom DateTime @db.Date @map("valid_from")
+  validTo DateTime @db.Date @map("valid_to")
+  providerRateRef String? @map("provider_rate_ref")
+  active Boolean @default(true)
+  createdAt DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt DateTime @updatedAt @db.Timestamptz(6) @map("updated_at")
+  product Product @relation("rates_product_id", fields: [productId], references: [id], onDelete: Restrict)
+  currencyRef Currency @relation("rates_currency", fields: [currency], references: [code], onDelete: Restrict)
+  rateHistoryByRateId RateHistory[] @relation("rate_history_rate_id")
+  quoteItemsByRateId QuoteItem[] @relation("quote_items_rate_id")
+  @@index([productId, validFrom, validTo])
+  @@map("rates")
+}
+
+model RateHistory {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  rateId String @db.Uuid @map("rate_id")
+  oldAmount Decimal? @db.Decimal(14, 2) @map("old_amount")
+  newAmount Decimal @db.Decimal(14, 2) @map("new_amount")
+  currency String @db.Char(3)
+  reason String
+  changedAt DateTime @default(now()) @db.Timestamptz(6) @map("changed_at")
+  changedById String? @db.Uuid @map("changed_by_id")
+  rate Rate @relation("rate_history_rate_id", fields: [rateId], references: [id], onDelete: Restrict)
+  currencyRef Currency @relation("rate_history_currency", fields: [currency], references: [code], onDelete: Restrict)
+  changedBy User? @relation("rate_history_changed_by_id", fields: [changedById], references: [id], onDelete: SetNull)
+  @@index([rateId, changedAt])
+  @@map("rate_history")
+}
+
+model Quote {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  reference String @unique
+  status QuoteStatus @default(OPEN)
+  currency String @db.Char(3)
+  totalAmount Decimal @db.Decimal(14, 2) @map("total_amount")
+  expiresAt DateTime @db.Timestamptz(6) @map("expires_at")
+  createdById String? @db.Uuid @map("created_by_id")
+  createdAt DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+  currencyRef Currency @relation("quotes_currency", fields: [currency], references: [code], onDelete: Restrict)
+  createdBy User? @relation("quotes_created_by_id", fields: [createdById], references: [id], onDelete: SetNull)
+  quoteItemsByQuoteId QuoteItem[] @relation("quote_items_quote_id")
+  BookingByQuoteId Booking? @relation("bookings_quote_id")
+  @@index([status, expiresAt])
+  @@map("quotes")
+}
+
+model QuoteItem {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  quoteId String @db.Uuid @map("quote_id")
+  productId String @db.Uuid @map("product_id")
+  rateId String? @db.Uuid @map("rate_id")
+  quantity Int
+  unitAmount Decimal @db.Decimal(14, 2) @map("unit_amount")
+  startDate DateTime @db.Date @map("start_date")
+  endDate DateTime? @db.Date @map("end_date")
+  providerQuoteRef String? @map("provider_quote_ref")
+  sourceCurrency String? @db.Char(3) @map("source_currency")
+  sourceAmount Decimal? @db.Decimal(14, 2) @map("source_amount")
+  quote Quote @relation("quote_items_quote_id", fields: [quoteId], references: [id], onDelete: Cascade)
+  product Product @relation("quote_items_product_id", fields: [productId], references: [id], onDelete: Restrict)
+  rate Rate? @relation("quote_items_rate_id", fields: [rateId], references: [id], onDelete: SetNull)
+  sourceCurrencyRef Currency? @relation("quote_items_source_currency", fields: [sourceCurrency], references: [code], onDelete: Restrict)
+  @@index([quoteId])
+  @@map("quote_items")
+}
+
+model Booking {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  reference String @unique
+  quoteId String? @unique @db.Uuid @map("quote_id")
+  status BookingStatus @default(DRAFT)
+  currency String @db.Char(3)
+  totalAmount Decimal @db.Decimal(14, 2) @map("total_amount")
+  holderName String @map("holder_name")
+  holderEmail String @map("holder_email")
+  requestedAt DateTime @default(now()) @db.Timestamptz(6) @map("requested_at")
+  confirmedAt DateTime? @db.Timestamptz(6) @map("confirmed_at")
+  cancelledAt DateTime? @db.Timestamptz(6) @map("cancelled_at")
+  createdById String? @db.Uuid @map("created_by_id")
+  createdAt DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt DateTime @updatedAt @db.Timestamptz(6) @map("updated_at")
+  quote Quote? @relation("bookings_quote_id", fields: [quoteId], references: [id], onDelete: SetNull)
+  currencyRef Currency @relation("bookings_currency", fields: [currency], references: [code], onDelete: Restrict)
+  createdBy User? @relation("bookings_created_by_id", fields: [createdById], references: [id], onDelete: SetNull)
+  bookingItemsByBookingId BookingItem[] @relation("booking_items_booking_id")
+  travelersByBookingId Traveler[] @relation("travelers_booking_id")
+  bookingStatusHistoryByBookingId BookingStatusHistory[] @relation("booking_status_history_booking_id")
+  exceptionCasesByBookingId ExceptionCase[] @relation("exception_cases_booking_id")
+  @@index([status, requestedAt])
+  @@map("bookings")
+}
+
+model BookingItem {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  bookingId String @db.Uuid @map("booking_id")
+  productId String @db.Uuid @map("product_id")
+  status BookingItemStatus @default(PENDING)
+  quantity Int
+  startDate DateTime @db.Date @map("start_date")
+  endDate DateTime? @db.Date @map("end_date")
+  unitAmount Decimal @db.Decimal(14, 2) @map("unit_amount")
+  totalAmount Decimal @db.Decimal(14, 2) @map("total_amount")
+  externalLocator String? @map("external_locator")
+  providerBookingRef String? @map("provider_booking_ref")
+  confirmedAt DateTime? @db.Timestamptz(6) @map("confirmed_at")
+  createdAt DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt DateTime @updatedAt @db.Timestamptz(6) @map("updated_at")
+  providerHoldRef String? @map("provider_hold_ref")
+  holdExpiresAt DateTime? @db.Timestamptz(6) @map("hold_expires_at")
+  sourceCurrency String? @db.Char(3) @map("source_currency")
+  sourceAmount Decimal? @db.Decimal(14, 2) @map("source_amount")
+  booking Booking @relation("booking_items_booking_id", fields: [bookingId], references: [id], onDelete: Restrict)
+  product Product @relation("booking_items_product_id", fields: [productId], references: [id], onDelete: Restrict)
+  sourceCurrencyRef Currency? @relation("booking_items_source_currency", fields: [sourceCurrency], references: [code], onDelete: Restrict)
+  inventoryHoldsByBookingItemId InventoryHold[] @relation("inventory_holds_booking_item_id")
+  integrationTransactionsByBookingItemId IntegrationTransaction[] @relation("integration_transactions_booking_item_id")
+  inconsistenciesByBookingItemId Inconsistency[] @relation("inconsistencies_booking_item_id")
+  @@index([bookingId])
+  @@index([status])
+  @@index([productId])
+  @@index([status, holdExpiresAt])
+  @@map("booking_items")
+}
+
+model Traveler {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  bookingId String @db.Uuid @map("booking_id")
+  firstName String @map("first_name")
+  lastName String @map("last_name")
+  documentType String? @map("document_type")
+  documentNumber String? @map("document_number")
+  birthDate DateTime? @db.Date @map("birth_date")
+  email String?
+  isHolder Boolean @default(false) @map("is_holder")
+  booking Booking @relation("travelers_booking_id", fields: [bookingId], references: [id], onDelete: Cascade)
+  @@index([bookingId])
+  @@map("travelers")
+}
+
+model BookingStatusHistory {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  bookingId String @db.Uuid @map("booking_id")
+  fromStatus BookingStatus? @map("from_status")
+  toStatus BookingStatus @map("to_status")
+  reason String?
+  userId String? @db.Uuid @map("user_id")
+  correlationId String? @map("correlation_id")
+  at DateTime @default(now()) @db.Timestamptz(6)
+  booking Booking @relation("booking_status_history_booking_id", fields: [bookingId], references: [id], onDelete: Restrict)
+  user User? @relation("booking_status_history_user_id", fields: [userId], references: [id], onDelete: SetNull)
+  @@index([bookingId, at])
+  @@map("booking_status_history")
+}
+
+model IntegrationTransaction {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  correlationId String @map("correlation_id")
+  integrationId String? @db.Uuid @map("integration_id")
+  providerId String? @db.Uuid @map("provider_id")
+  operation IntegrationOperation
+  operationKey String? @unique @map("operation_key")
+  idempotencyKey String? @map("idempotency_key")
+  status TransactionStatus @default(PENDING)
+  startedAt DateTime @default(now()) @db.Timestamptz(6) @map("started_at")
+  finishedAt DateTime? @db.Timestamptz(6) @map("finished_at")
+  durationMs Int? @map("duration_ms")
+  attempts Int @default(0)
+  httpStatus Int? @map("http_status")
+  errorCode String? @map("error_code")
+  errorMessage String? @map("error_message")
+  requestPayload Json? @map("request_payload")
+  responsePayload Json? @map("response_payload")
+  bookingItemId String? @db.Uuid @map("booking_item_id")
+  userId String? @db.Uuid @map("user_id")
+  integration Integration? @relation("integration_transactions_integration_id", fields: [integrationId], references: [id], onDelete: Restrict)
+  provider Provider? @relation("integration_transactions_provider_id", fields: [providerId], references: [id], onDelete: Restrict)
+  bookingItem BookingItem? @relation("integration_transactions_booking_item_id", fields: [bookingItemId], references: [id], onDelete: Restrict)
+  user User? @relation("integration_transactions_user_id", fields: [userId], references: [id], onDelete: SetNull)
+  transactionAttemptsByTransactionId TransactionAttempt[] @relation("transaction_attempts_transaction_id")
+  exceptionCasesByTransactionId ExceptionCase[] @relation("exception_cases_transaction_id")
+  @@index([correlationId])
+  @@index([integrationId, startedAt])
+  @@index([providerId, startedAt])
+  @@index([status, startedAt])
+  @@index([operation, startedAt])
+  @@index([bookingItemId])
+  @@map("integration_transactions")
+}
+
+model TransactionAttempt {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  transactionId String @db.Uuid @map("transaction_id")
+  attemptNumber Int @map("attempt_number")
+  startedAt DateTime @default(now()) @db.Timestamptz(6) @map("started_at")
+  durationMs Int? @map("duration_ms")
+  status TransactionStatus
+  backoffMs Int? @map("backoff_ms")
+  errorCode String? @map("error_code")
+  errorMessage String? @map("error_message")
+  transaction IntegrationTransaction @relation("transaction_attempts_transaction_id", fields: [transactionId], references: [id], onDelete: Cascade)
+  @@unique([transactionId, attemptNumber])
+  @@map("transaction_attempts")
+}
+
+model IdempotencyKey {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  idemKey String @map("idem_key")
+  scope String
+  requestHash String @map("request_hash")
+  status IdempotencyStatus @default(IN_PROGRESS)
+  responseStatus Int? @map("response_status")
+  responseBody Json? @map("response_body")
+  lockedAt DateTime @default(now()) @db.Timestamptz(6) @map("locked_at")
+  completedAt DateTime? @db.Timestamptz(6) @map("completed_at")
+  expiresAt DateTime @db.Timestamptz(6) @map("expires_at")
+  userId String? @db.Uuid @map("user_id")
+  createdAt DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+  user User? @relation("idempotency_keys_user_id", fields: [userId], references: [id], onDelete: SetNull)
+  @@unique([idemKey, scope])
+  @@index([expiresAt])
+  @@map("idempotency_keys")
+}
+
+model SystemLog {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  level LogLevel
+  context String
+  message String
+  correlationId String? @map("correlation_id")
+  meta Json?
+  at DateTime @default(now()) @db.Timestamptz(6)
+  @@index([level, at])
+  @@index([correlationId])
+  @@index([context, at])
+  @@map("system_logs")
+}
+
+model AuditLog {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId String? @db.Uuid @map("user_id")
+  action String
+  entity String
+  entityId String? @map("entity_id")
+  before Json?
+  after Json?
+  ip String?
+  userAgent String? @map("user_agent")
+  correlationId String? @map("correlation_id")
+  at DateTime @default(now()) @db.Timestamptz(6)
+  user User? @relation("audit_logs_user_id", fields: [userId], references: [id], onDelete: Restrict)
+  @@index([entity, entityId])
+  @@index([userId, at])
+  @@index([at])
+  @@index([correlationId])
+  @@map("audit_logs")
+}
+
+model ExceptionCase {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  type ExceptionType
+  severity Severity @default(MEDIUM)
+  status ExceptionStatus @default(OPEN)
+  title String
+  description String?
+  bookingId String? @db.Uuid @map("booking_id")
+  transactionId String? @db.Uuid @map("transaction_id")
+  providerId String? @db.Uuid @map("provider_id")
+  assignedToId String? @db.Uuid @map("assigned_to_id")
+  resolution String?
+  resolvedAt DateTime? @db.Timestamptz(6) @map("resolved_at")
+  resolvedById String? @db.Uuid @map("resolved_by_id")
+  createdAt DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt DateTime @updatedAt @db.Timestamptz(6) @map("updated_at")
+  booking Booking? @relation("exception_cases_booking_id", fields: [bookingId], references: [id], onDelete: Restrict)
+  transaction IntegrationTransaction? @relation("exception_cases_transaction_id", fields: [transactionId], references: [id], onDelete: Restrict)
+  provider Provider? @relation("exception_cases_provider_id", fields: [providerId], references: [id], onDelete: Restrict)
+  assignedTo User? @relation("exception_cases_assigned_to_id", fields: [assignedToId], references: [id], onDelete: SetNull)
+  resolvedBy User? @relation("exception_cases_resolved_by_id", fields: [resolvedById], references: [id], onDelete: SetNull)
+  exceptionEventsByExceptionId ExceptionEvent[] @relation("exception_events_exception_id")
+  @@index([status, severity])
+  @@index([bookingId])
+  @@index([providerId])
+  @@index([assignedToId])
+  @@map("exception_cases")
+}
+
+model ExceptionEvent {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  exceptionId String @db.Uuid @map("exception_id")
+  userId String? @db.Uuid @map("user_id")
+  kind String
+  message String
+  at DateTime @default(now()) @db.Timestamptz(6)
+  exception ExceptionCase @relation("exception_events_exception_id", fields: [exceptionId], references: [id], onDelete: Cascade)
+  user User? @relation("exception_events_user_id", fields: [userId], references: [id], onDelete: SetNull)
+  @@index([exceptionId, at])
+  @@map("exception_events")
+}
+
+model Alert {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  kind AlertKind
+  severity Severity @default(HIGH)
+  status AlertStatus @default(OPEN)
+  integrationId String? @db.Uuid @map("integration_id")
+  providerId String? @db.Uuid @map("provider_id")
+  message String
+  dedupeKey String? @map("dedupe_key")
+  createdAt DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+  acknowledgedById String? @db.Uuid @map("acknowledged_by_id")
+  acknowledgedAt DateTime? @db.Timestamptz(6) @map("acknowledged_at")
+  resolvedAt DateTime? @db.Timestamptz(6) @map("resolved_at")
+  integration Integration? @relation("alerts_integration_id", fields: [integrationId], references: [id], onDelete: Restrict)
+  provider Provider? @relation("alerts_provider_id", fields: [providerId], references: [id], onDelete: Restrict)
+  acknowledgedBy User? @relation("alerts_acknowledged_by_id", fields: [acknowledgedById], references: [id], onDelete: SetNull)
+  @@index([status, severity])
+  @@index([dedupeKey])
+  @@index([integrationId, createdAt])
+  @@map("alerts")
+}
+
+model SyncRun {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  kind SyncKind
+  providerId String? @db.Uuid @map("provider_id")
+  integrationId String? @db.Uuid @map("integration_id")
+  status SyncStatus @default(RUNNING)
+  startedAt DateTime @default(now()) @db.Timestamptz(6) @map("started_at")
+  finishedAt DateTime? @db.Timestamptz(6) @map("finished_at")
+  itemsProcessed Int @default(0) @map("items_processed")
+  itemsChanged Int @default(0) @map("items_changed")
+  inconsistenciesFound Int @default(0) @map("inconsistencies_found")
+  errorMessage String? @map("error_message")
+  triggeredById String? @db.Uuid @map("triggered_by_id")
+  correlationId String? @map("correlation_id")
+  provider Provider? @relation("sync_runs_provider_id", fields: [providerId], references: [id], onDelete: Restrict)
+  integration Integration? @relation("sync_runs_integration_id", fields: [integrationId], references: [id], onDelete: Restrict)
+  triggeredBy User? @relation("sync_runs_triggered_by_id", fields: [triggeredById], references: [id], onDelete: SetNull)
+  inconsistenciesBySyncRunId Inconsistency[] @relation("inconsistencies_sync_run_id")
+  @@index([kind, startedAt])
+  @@index([providerId, startedAt])
+  @@map("sync_runs")
+}
+
+model Inconsistency {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  kind InconsistencyKind
+  status InconsistencyStatus @default(OPEN)
+  providerId String @db.Uuid @map("provider_id")
+  productId String? @db.Uuid @map("product_id")
+  bookingItemId String? @db.Uuid @map("booking_item_id")
+  syncRunId String? @db.Uuid @map("sync_run_id")
+  expected Json?
+  actual Json?
+  detectedAt DateTime @default(now()) @db.Timestamptz(6) @map("detected_at")
+  resolvedAt DateTime? @db.Timestamptz(6) @map("resolved_at")
+  resolvedById String? @db.Uuid @map("resolved_by_id")
+  notes String?
+  provider Provider @relation("inconsistencies_provider_id", fields: [providerId], references: [id], onDelete: Restrict)
+  product Product? @relation("inconsistencies_product_id", fields: [productId], references: [id], onDelete: Restrict)
+  bookingItem BookingItem? @relation("inconsistencies_booking_item_id", fields: [bookingItemId], references: [id], onDelete: Restrict)
+  syncRun SyncRun? @relation("inconsistencies_sync_run_id", fields: [syncRunId], references: [id], onDelete: SetNull)
+  resolvedBy User? @relation("inconsistencies_resolved_by_id", fields: [resolvedById], references: [id], onDelete: SetNull)
+  @@index([status, detectedAt])
+  @@index([providerId])
+  @@index([productId])
+  @@map("inconsistencies")
+}

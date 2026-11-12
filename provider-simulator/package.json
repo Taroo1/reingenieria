@@ -1,0 +1,20 @@
+{
+  "name": "mundoglobal-provider-simulator",
+  "version": "0.3.0",
+  "description": "Proveedores ficticios (GDS, aerolinea, consolidador, hotel, bedbank, asistencia) con API HTTP propia y fallas inyectables",
+  "private": true,
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/main.js",
+    "dev": "tsc -p tsconfig.json && node dist/main.js",
+    "test": "tsc -p tsconfig.json && node --test \"dist/**/*.test.js\""
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  }
+}

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { csrfOk } from '@/lib/server/proxy';
-import { API_URL, TokenSet, writeTokens } from '@/lib/server/session';
+import { API_URL, logBackendError, TokenSet, writeTokens } from '@/lib/server/session';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,7 +17,8 @@ export async function POST(req: NextRequest) {
       body: await req.text(),
       cache: 'no-store',
     });
-  } catch {
+  } catch (err) {
+    logBackendError('login', err);
     return NextResponse.json({ error: { code: 'BACKEND_UNREACHABLE', message: 'No se pudo contactar al backend', statusCode: 502 } }, { status: 502 });
   }
   const text = await res.text();

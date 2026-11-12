@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ACCESS_COOKIE, API_URL, clearTokens, REFRESH_COOKIE, refreshSession, TokenSet, writeTokens } from './session';
+import { ACCESS_COOKIE, API_URL, clearTokens, logBackendError, REFRESH_COOKIE, refreshSession, TokenSet, writeTokens } from './session';
 
 /** Segmento de ruta seguro: impide salir del prefijo /api/v1 del backend (.., barras codificadas, etc.). */
 const SEGMENT = /^[A-Za-z0-9_~-][A-Za-z0-9._~-]*$/;
@@ -79,7 +79,8 @@ export async function proxyToBackend(req: NextRequest, segments: string[]): Prom
         expired = true;
       }
     }
-  } catch {
+  } catch (err) {
+    logBackendError(`proxy ${req.method} /${path}`, err);
     return json(502, 'BACKEND_UNREACHABLE', 'No se pudo contactar al backend');
   }
 

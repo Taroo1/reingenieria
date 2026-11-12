@@ -1,7 +1,17 @@
 import { createHash } from 'node:crypto';
 
 /** URL del backend. Solo existe en el servidor de Next.js: el navegador nunca llama al backend directamente. */
-export const API_URL = (process.env.API_URL ?? 'http://localhost:3001').replace(/\/+$/, '');
+export const API_URL = (process.env.API_URL ?? 'http://localhost:3001')
+  .trim()
+  .replace(/^['"]|['"]$/g, '')
+  .replace(/\/+$/, '');
+
+/** Deja en el log del servidor (en Vercel: Logs) la causa real cuando no se puede contactar al backend. */
+export function logBackendError(where: string, err: unknown): void {
+  const msg = err instanceof Error ? err.message : String(err);
+  const cause = err instanceof Error && err.cause instanceof Error ? ` | causa: ${err.cause.message}` : '';
+  console.error(`[backend] ${where} -> ${API_URL}: ${msg}${cause}`);
+}
 export const ACCESS_COOKIE = 'mgt_at';
 export const REFRESH_COOKIE = 'mgt_rt';
 const REFRESH_TTL_SECONDS = Number(process.env.REFRESH_TOKEN_TTL_DAYS ?? 7) * 86_400;
@@ -71,7 +81,8 @@ export function refreshSession(refreshToken: string, fetchImpl: typeof fetch = f
       if (!res.ok) return { ok: false, status: res.status };
       const body = (await res.json()) as { data: TokenSet };
       return { ok: true, tokens: body.data };
-    } catch {
+    } catch (err) {
+      logBackendError('refresh', err);
       return { ok: false, status: 503 };
     }
   })();
